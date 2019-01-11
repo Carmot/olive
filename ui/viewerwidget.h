@@ -54,7 +54,7 @@ private:
 	bool dragging;
 	void seek_from_click(int x);
 	GLuint compose_sequence(QVector<Clip *> &nests, bool render_audio);
-    GLuint draw_clip(QOpenGLFramebufferObject *clip, GLuint texture, bool clear);
+    GLuint draw_clip(QOpenGLFramebufferObject *clip, GLuint texture, bool clear, bool flip = false);
     void process_effect(Clip* c, Effect* e, double timecode, GLTextureCoords& coords, GLuint& composite_texture, bool& fbo_switcher, int data);
     Effect* gizmos;
     int drag_start_x;

@@ -11,6 +11,7 @@
 #include <QComboBox>
 #include <QWidget>
 #include <QtMath>
+#include <QGLFramebufferObject>
 
 #include "ui/labelslider.h"
 #include "ui/collapsiblewidget.h"
@@ -65,12 +66,16 @@ void TimecodeEffect::redraw(double timecode) {
 	else {
 		double media_rate = parent_clip->getMediaFrameRate();
 		display_timecode = prepend_text->get_string_value(timecode) + frame_to_timecode(timecode * media_rate, config.timecode_view, media_rate);}
-	img.fill(Qt::transparent);
 
-	QPainter p(&img);
+    fbo->bind();
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    fbo->release();
+
+    QPainter p(fbo);
 	p.setRenderHint(QPainter::Antialiasing);
-	int width = img.width();
-	int height = img.height();
+    int width = fbo->width();
+    int height = fbo->height();
 
 	// set font
 	font.setStyleHint(QFont::Helvetica, QFont::PreferAntialias);

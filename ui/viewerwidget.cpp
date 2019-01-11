@@ -380,10 +380,15 @@ void ViewerWidget::drawTitleSafeArea() {
 	glEnd();
 }
 
-GLuint ViewerWidget::draw_clip(QOpenGLFramebufferObject* fbo, GLuint texture, bool clear) {
+GLuint ViewerWidget::draw_clip(QOpenGLFramebufferObject* fbo, GLuint texture, bool clear, bool flip) {
 	glPushMatrix();
 	glLoadIdentity();
-	glOrtho(0, 1, 0, 1, -1, 1);
+
+    if (flip) {
+        glOrtho(0, 1, 1, 0, -1, 1);
+    } else {
+        glOrtho(0, 1, 0, 1, -1, 1);
+    }
 
 	fbo->bind();
 
@@ -431,17 +436,17 @@ void ViewerWidget::process_effect(Clip* c, Effect* e, double timecode, GLTexture
 			e->startEffect();
 			if (e->enable_shader && e->is_glsl_linked()) {
 				e->process_shader(timecode, coords);
-				composite_texture = draw_clip(c->fbo[fbo_switcher], composite_texture, true);
+                composite_texture = draw_clip(c->fbo[fbo_switcher], composite_texture, true);
 				fbo_switcher = !fbo_switcher;
 			}
 			if (e->enable_superimpose) {
-				GLuint superimpose_texture = e->process_superimpose(timecode);
+                GLuint superimpose_texture = e->process_superimpose(timecode);
 				if (superimpose_texture == 0) {
 					dout << "[WARNING] Superimpose texture was NULL, retrying...";
 					texture_failed = true;
 				} else {
-					composite_texture = draw_clip(c->fbo[!fbo_switcher], superimpose_texture, false);
-				}
+                    composite_texture = draw_clip(c->fbo[!fbo_switcher], superimpose_texture, false, true);
+                }
 			}
 			e->endEffect();
 		}

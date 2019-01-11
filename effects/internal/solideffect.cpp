@@ -4,7 +4,7 @@
 #include <QPainter>
 #include <QtMath>
 #include <QVariant>
-#include <QImage>
+#include <QGLFramebufferObject>
 #include <QComboBox>
 
 #include "project/clip.h"
@@ -48,22 +48,31 @@ SolidEffect::SolidEffect(Clip* c, const EffectMeta* em) : Effect(c, em) {
 }
 
 void SolidEffect::redraw(double timecode) {
-	int w = img.width();
-	int h = img.height();
+    int w = fbo->width();
+    int h = fbo->height();
 	int alpha = qRound(opacity_field->get_double_value(timecode)*2.55);
 	switch (solid_type->get_combo_data(timecode).toInt()) {
 	case SOLID_TYPE_COLOR:
 	{
 		QColor solidColor = solid_color_field->get_color_value(timecode);
 		solidColor.setAlpha(alpha);
-		img.fill(solidColor);
+
+        fbo->bind();
+        glClearColor(solidColor.redF(), solidColor.greenF(), solidColor.blueF(), solidColor.alphaF());
+        glClear(GL_COLOR_BUFFER_BIT);
+        fbo->release();
 	}
 		break;
 	case SOLID_TYPE_BARS:
 	{
 		// draw smpte bars
-		QPainter p(&img);
-		img.fill(Qt::transparent);
+        fbo->bind();
+        glClearColor(0, 0, 0, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
+        fbo->release();
+
+        QPainter p(fbo);
+
 		int bar_width = qCeil((double) w / 7.0);
 		int first_bar_height = qCeil((double) h / 3.0 * 2.0);
 		int second_bar_height = qCeil((double) h / 12.5);
@@ -146,8 +155,12 @@ void SolidEffect::redraw(double timecode) {
 	case SOLID_TYPE_CHECKERBOARD:
 	{
 		// draw checkboard
-		QPainter p(&img);
-		img.fill(Qt::transparent);
+        fbo->bind();
+        glClearColor(0, 0, 0, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
+        fbo->release();
+
+        QPainter p(fbo);
 
 		int checker_width = qCeil(checkerboard_size_field->get_double_value(timecode));
 		int checker_x, checker_y;

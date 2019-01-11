@@ -10,6 +10,8 @@
 #include <QOpenGLTexture>
 #include <QMutex>
 #include <QThread>
+
+class QGLFramebufferObject;
 class QLabel;
 class QWidget;
 class CollapsibleWidget;
@@ -179,14 +181,14 @@ protected:
 	QString fragPath;
 
 	// superimpose effect
-	QImage img;
-	QOpenGLTexture* texture;
+    QGLFramebufferObject* fbo;
 
 	// enable effect to update constantly
 	bool enable_always_update;
 private:
 	// superimpose effect
 	QString script;
+    bool force_superimpose_update;
 
 	bool isOpen;
 	QVector<EffectRow*> rows;

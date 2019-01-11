@@ -43,6 +43,7 @@
 #include <QPainter>
 #include <QtMath>
 #include <QMenu>
+#include <QGLFramebufferObject>
 
 QVector<EffectMeta> effects;
 
@@ -264,10 +265,11 @@ Effect::Effect(Clip* c, const EffectMeta *em) :
 	enable_superimpose(false),
 	enable_image(false),
 	glslProgram(NULL),
-	texture(NULL),
+    fbo(NULL),
 	isOpen(false),
 	bound(false),
-	enable_always_update(false)
+    enable_always_update(false),
+    force_superimpose_update(false)
 {
 	// set up base UI
 	container = new CollapsibleWidget();
@@ -823,7 +825,8 @@ void Effect::open() {
 	}
 
 	if (enable_superimpose) {
-		texture = new QOpenGLTexture(QOpenGLTexture::Target2D);
+        fbo = new QGLFramebufferObject(parent_clip->getWidth(), parent_clip->getHeight(), GL_TEXTURE_2D);
+        force_superimpose_update = true;
 	}
 }
 
@@ -899,28 +902,13 @@ void Effect::process_shader(double timecode, GLTextureCoords&) {
 void Effect::process_coords(double, GLTextureCoords&, int data) {}
 
 GLuint Effect::process_superimpose(double timecode) {
-	bool recreate_texture = false;
-	int width = parent_clip->getWidth();
-	int height = parent_clip->getHeight();
+    if (fbo != NULL) {
+        if (enable_always_update || force_superimpose_update || valueHasChanged(timecode)) {
+            redraw(timecode);
+            force_superimpose_update = false;
+        }
 
-	if (width != img.width() || height != img.height()) {
-		img = QImage(width, height, QImage::Format_RGBA8888);
-		recreate_texture = true;
-	}
-
-	if (valueHasChanged(timecode) || recreate_texture || enable_always_update) {
-		redraw(timecode);
-	}
-
-	if (texture != NULL) {
-		if (recreate_texture || texture->width() != img.width() || texture->height() != img.height()) {
-			delete_texture();
-			texture = new QOpenGLTexture(QOpenGLTexture::Target2D);
-			texture->setData(img);
-		} else {
-			texture->setData(0, QOpenGLTexture::RGBA, QOpenGLTexture::UInt8, img.constBits());
-		}
-		return texture->textureId();
+        return fbo->texture();
 	}
 	return 0;
 }
@@ -1056,9 +1044,9 @@ bool Effect::valueHasChanged(double timecode) {
 }
 
 void Effect::delete_texture() {
-	if (texture != NULL) {
-		delete texture;
-		texture = NULL;
+    if (fbo != NULL) {
+        delete fbo;
+        fbo = NULL;
 	}
 }
 

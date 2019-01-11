@@ -11,6 +11,7 @@
 #include <QComboBox>
 #include <QWidget>
 #include <QtMath>
+#include <QGLFramebufferObject>
 
 #include "ui/labelslider.h"
 #include "ui/collapsiblewidget.h"
@@ -88,12 +89,16 @@ TextEffect::TextEffect(Clip *c, const EffectMeta* em) :
 }
 
 void TextEffect::redraw(double timecode) {
-	img.fill(Qt::transparent);
+    fbo->bind();
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    fbo->release();
 
-	QPainter p(&img);
+    QPainter p(fbo);
+
 	p.setRenderHint(QPainter::Antialiasing);
-	int width = img.width();
-	int height = img.height();
+    int width = fbo->width();
+    int height = fbo->height();
 
 	// set font
 	font.setStyleHint(QFont::Helvetica, QFont::PreferAntialias);
@@ -186,6 +191,8 @@ void TextEffect::redraw(double timecode) {
 	p.setPen(Qt::NoPen);
 	p.setBrush(set_color_button->get_color_value(timecode));
 	p.drawPath(path);
+
+    p.end();
 }
 
 void TextEffect::shadow_enable(bool e) {
